@@ -38,7 +38,7 @@ const platformSongs = [
   { title: "PREMIER LEAGUE", artist: "Dexter HMC", src: "audio/track10.mp3", cover: "covers/cover10.jpg", category: "drill" },
   { title: "91022", artist: "Dexter HMC", src: "audio/track11.mp3", cover: "covers/cover11.jpg", category: "drill" },
   { title: "PAS DE BRUIT #1", artist: "LDK PRC", src: "audio/track12.mp3", cover: "covers/cover12.jpg", category: "drill" },
-  { title: "101 Rue Cerçay (IGTV 4)", artist: "Dexter HMC", src: "audio/dtrack13.mp3", cover: "covers/cover13.jpg", category: "drill" },
+  { title: "101 Rue Cerçay", artist: "Dexter HMC", src: "audio/dtrack13.mp3", cover: "covers/cover13.jpg", category: "drill" },
   { title: "AFFIRMÉ / NDDB #5", artist: "BORO700", src: "audio/track14.mp3", cover: "covers/cover14.jpg", category: "drill" }
 ];
 
@@ -255,3 +255,4 @@ if ("serviceWorker" in navigator) {
     console.log("SW error", e);
   });
 }
+
