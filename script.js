@@ -23,7 +23,7 @@ let shuffleMode = false;
 let repeatMode = false;
 let isLowEnd = navigator.hardwareConcurrency <= 4 || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 let rafId = null;
-let currentSongs = []; // Liste des morceaux filtrés
+let currentSongs = [];
 
 const platformSongs = [
   { title: "ACIDO III", artist: "UdieNnx", src: "audio/track1.mp3", cover: "covers/cover1.jpg", category: "funk" },
@@ -44,20 +44,14 @@ const platformSongs = [
 
 function renderSongs(filter = "", category = "") {
   songsListEl.innerHTML = "";
-
   const f = filter.toLowerCase();
-
   currentSongs = platformSongs.filter(song => {
     const title = song.title.toLowerCase();
     const artist = song.artist.toLowerCase();
-
-    // Filtre plus souple : aucun filtre OU titre OU artiste contient le texte
     const matchesFilter = !f || title.includes(f) || artist.includes(f);
     const matchesCategory = !category || song.category === category;
-
     return matchesFilter && matchesCategory;
   });
-
   currentSongs.forEach((song, index) => {
     const div = document.createElement("div");
     div.classList.add("song");
@@ -70,23 +64,18 @@ function renderSongs(filter = "", category = "") {
       </div>
       <button>Play</button>
     `;
-
     const btn = div.querySelector("button");
     btn.addEventListener("click", (e) => {
       e.stopPropagation();
       playSong(index);
     });
-
     div.addEventListener("click", () => playSong(index));
-
     songsListEl.appendChild(div);
   });
-
-  // Si plus aucun morceau ne correspond, on remet un état propre
   if (currentSongs.length === 0) {
     audioPlayer.pause();
     wasPlaying = false;
-    playPauseBtn.textContent = "⏵";
+    playPauseBtn.textContent = "▶";
     playerBar.classList.remove("playing");
     songTitle.textContent = "Aucun morceau";
     songArtist.textContent = "";
@@ -97,12 +86,9 @@ function renderSongs(filter = "", category = "") {
 function playSong(index) {
   if (!currentSongs || currentSongs.length === 0) return;
   if (index < 0 || index >= currentSongs.length) index = 0;
-
   const song = currentSongs[index];
-
   audioPlayer.src = song.src;
   audioPlayer.load();
-
   audioPlayer.play().then(() => {
     songTitle.textContent = song.title;
     songArtist.textContent = song.artist;
@@ -111,10 +97,11 @@ function playSong(index) {
     playerBar.classList.add("playing");
     wasPlaying = true;
     currentIndex = index;
-
     if (!isLowEnd) {
       if (rafId) cancelAnimationFrame(rafId);
-      rafId = requestAnimationFrame(updateProgress);
+      if (typeof requestAnimationFrame !== 'undefined') {
+        rafId = requestAnimationFrame(updateProgress);
+      }
     }
   }).catch(e => {
     console.error("Erreur lors de la lecture :", e);
@@ -149,7 +136,9 @@ playPauseBtn.addEventListener("click", () => {
       wasPlaying = true;
       if (!isLowEnd) {
         if (rafId) cancelAnimationFrame(rafId);
-        rafId = requestAnimationFrame(updateProgress);
+        if (typeof requestAnimationFrame !== 'undefined') {
+          rafId = requestAnimationFrame(updateProgress);
+        }
       }
     }).catch(e => {
       console.error("Erreur lors de la lecture :", e);
@@ -176,9 +165,10 @@ function updateProgress() {
     currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
     durationEl.textContent = formatTime(audioPlayer.duration);
   }
-
   if (!audioPlayer.paused && !audioPlayer.ended && !isLowEnd) {
-    rafId = requestAnimationFrame(updateProgress);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      rafId = requestAnimationFrame(updateProgress);
+    }
   }
 }
 
@@ -194,37 +184,41 @@ progress.addEventListener("input", () => {
   }
 });
 
-// Quand un morceau se termine, on passe au suivant (en boucle)
+// Mise à jour de la barre de progression via l'événement timeupdate
+audioPlayer.addEventListener("timeupdate", () => {
+  if (audioPlayer.duration) {
+    const progressPercent = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    progress.value = progressPercent;
+    currentTimeEl.textContent = formatTime(audioPlayer.currentTime);
+    durationEl.textContent = formatTime(audioPlayer.duration);
+  }
+});
+
 audioPlayer.addEventListener("ended", () => {
   if (!currentSongs || currentSongs.length === 0) {
     wasPlaying = false;
-    playPauseBtn.textContent = "⏵";
+    playPauseBtn.textContent = "▶";
     playerBar.classList.remove("playing");
     return;
   }
-
   if (repeatMode) {
     playSong(currentIndex);
     return;
   }
-
   if (shuffleMode) {
     currentIndex = Math.floor(Math.random() * currentSongs.length);
   } else {
     currentIndex = (currentIndex + 1) % currentSongs.length;
   }
-
   playSong(currentIndex);
 });
 
-// Pause propre (sans tentative de relancer tout seul)
 audioPlayer.addEventListener("pause", () => {
   wasPlaying = false;
-  playPauseBtn.textContent = "⏵";
+  playPauseBtn.textContent = "▶";
   playerBar.classList.remove("playing");
 });
 
-// Filtres
 searchInput.addEventListener("input", (e) => {
   const filter = e.target.value.toLowerCase();
   renderSongs(filter, categoryFilter.value);
@@ -240,13 +234,11 @@ clearFilters.addEventListener("click", () => {
   renderSongs();
 });
 
-// Thème clair/sombre
 themeToggle.addEventListener("click", () => {
   document.body.classList.toggle("light-theme");
   themeToggle.textContent = document.body.classList.contains("light-theme") ? "🌙" : "☀️";
 });
 
-// Initialisation
 renderSongs();
 updateProgress();
 
@@ -255,5 +247,3 @@ if ("serviceWorker" in navigator) {
     console.log("SW error", e);
   });
 }
-
-
